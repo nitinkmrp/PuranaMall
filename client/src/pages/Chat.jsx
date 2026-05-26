@@ -33,7 +33,7 @@ const Chat = () => {
   const fetchConversations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/messages/conversations', {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/messages/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {
@@ -48,7 +48,7 @@ const Chat = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/messages/chat/${otherId}/${pId}`, {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/messages/chat/${otherId}/${pId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {
@@ -67,7 +67,7 @@ const Chat = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/messages', {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/messages`, {
         receiver_id: otherUserId,
         product_id: productId,
         message: newMessage

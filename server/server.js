@@ -15,7 +15,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ dest: "/tmp" });
 
 const pool = require("./db");
 
@@ -415,6 +415,11 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
 
 // ================= SERVER =================
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server running on port ${process.env.PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

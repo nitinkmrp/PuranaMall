@@ -73,7 +73,7 @@ const Resell = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/products');
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/products`);
       if (response.data.success) {
         setProducts(response.data.products);
       }
@@ -86,7 +86,7 @@ const Resell = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const response = await axios.get('http://localhost:5000/api/messages/unread-count', {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/messages/unread-count`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {
@@ -155,12 +155,12 @@ const Resell = () => {
       };
 
       if (editingProductId) {
-        const response = await axios.put(`http://localhost:5000/api/products/${editingProductId}`, submitData, { headers });
+        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/products/${editingProductId}`, submitData, { headers });
         if (response.data.success) {
           setProducts(products.map(p => p.id === editingProductId ? response.data.product : p));
         }
       } else {
-        const response = await axios.post('http://localhost:5000/api/products', submitData, { headers });
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/products`, submitData, { headers });
         if (response.data.success) {
           setProducts([response.data.product, ...products]);
         }
@@ -212,7 +212,7 @@ const Resell = () => {
       const token = localStorage.getItem('token');
       const addressString = JSON.stringify(editAddressData);
       
-      const response = await axios.put('http://localhost:5000/api/auth/profile', 
+      const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/profile`, 
         { address: addressString }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
