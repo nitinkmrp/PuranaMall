@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import './Resell.css';
 import './Chat.css';
 
@@ -12,6 +13,38 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const socketRef = useRef(null);
+  let typingTimeout = null;
+
+  useEffect(() => {
+    if (user) {
+      socketRef.current = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
+      socketRef.current.emit('join', user.id);
+
+      socketRef.current.on('newMessage', (message) => {
+        if (message.product_id == productId && (message.sender_id == otherUserId || message.receiver_id == otherUserId)) {
+          setMessages(prev => [...prev, message]);
+        }
+      });
+
+      socketRef.current.on('typing', (data) => {
+        if (data.senderId == otherUserId && data.productId == productId) {
+          setIsTyping(true);
+        }
+      });
+
+      socketRef.current.on('stopTyping', (data) => {
+        if (data.senderId == otherUserId && data.productId == productId) {
+          setIsTyping(false);
+        }
+      });
+
+      return () => {
+        socketRef.current.disconnect();
+      };
+    }
+  }, [user, otherUserId, productId]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -61,9 +94,24 @@ const Chat = () => {
     }
   };
 
+  const handleTyping = (e) => {
+    setNewMessage(e.target.value);
+    if (socketRef.current && user && otherUserId && productId) {
+      socketRef.current.emit('typing', { senderId: user.id, receiverId: otherUserId, productId });
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        socketRef.current.emit('stopTyping', { senderId: user.id, receiverId: otherUserId, productId });
+      }, 2000);
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !otherUserId || !productId) return;
+
+    if (socketRef.current && user && otherUserId && productId) {
+      socketRef.current.emit('stopTyping', { senderId: user.id, receiverId: otherUserId, productId });
+    }
 
     try {
       const token = localStorage.getItem('token');
@@ -76,7 +124,7 @@ const Chat = () => {
       });
 
       if (response.data.success) {
-        setMessages([...messages, {
+        setMessages(prev => [...prev, {
           ...response.data.message,
           sender_id: user.id,
           sender_name: user.name
@@ -152,6 +200,11 @@ const Chat = () => {
                       );
                     })
                   )}
+                  {isTyping && (
+                    <div className="typing-indicator" style={{ padding: '10px', color: '#666', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                      typing...
+                    </div>
+                  )}
                 </div>
                 
                 <form className="chat-input-area" onSubmit={handleSendMessage}>
@@ -159,7 +212,7 @@ const Chat = () => {
                     type="text" 
                     placeholder="Type a message..." 
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={handleTyping}
                   />
                   <button type="submit" disabled={!newMessage.trim()}>Send</button>
                 </form>

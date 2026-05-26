@@ -1,6 +1,8 @@
 
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
@@ -20,6 +22,13 @@ const upload = multer({ dest: "/tmp" });
 const pool = require("./db");
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 app.use(cors());
 app.use(express.json());
@@ -339,6 +348,9 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
       [sender_id, receiver_id, product_id, message]
     );
 
+    // Emit real-time message
+    io.to(receiver_id.toString()).emit("newMessage", newMessage.rows[0]);
+
     res.status(201).json({ success: true, message: newMessage.rows[0] });
   } catch (error) {
     console.error(error);
@@ -417,11 +429,39 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
   }
 });
 
+// ================= SOCKET.IO =================
+
+io.on("connection", (socket) => {
+  console.log("A user connected:", socket.id);
+
+  socket.on("join", (userId) => {
+    socket.join(userId.toString());
+  });
+
+  socket.on("typing", (data) => {
+    io.to(data.receiverId.toString()).emit("typing", {
+      senderId: data.senderId,
+      productId: data.productId
+    });
+  });
+
+  socket.on("stopTyping", (data) => {
+    io.to(data.receiverId.toString()).emit("stopTyping", {
+      senderId: data.senderId,
+      productId: data.productId
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
 // ================= SERVER =================
 
 if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 }
