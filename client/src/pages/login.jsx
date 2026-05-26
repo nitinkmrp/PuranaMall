@@ -41,8 +41,12 @@ export default function Login() {
       }
 
     } catch (error) {
-
-      alert(error.response.data.message);
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("Network error or server is unreachable. Please try again.");
+        console.error(error);
+      }
     }
   };
 
