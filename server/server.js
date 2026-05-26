@@ -24,6 +24,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("PuranaMall API is running successfully!");
+});
+
 
 // ================= SIGNUP =================
 
@@ -415,7 +419,7 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
 
 // ================= SERVER =================
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
