@@ -30,6 +30,7 @@ const Resell = () => {
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [viewingMyProducts, setViewingMyProducts] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isSellRotating, setIsSellRotating] = useState(false);
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -478,6 +479,8 @@ const Resell = () => {
             
             {/* The multi-colour gradient Sell button */}
             <button className="pm-sell-btn" onClick={() => {
+              setIsSellRotating(true);
+              setTimeout(() => setIsSellRotating(false), 600);
               if (!user) {
                 alert("Please login first to post an ad!");
                 window.location.href = "/login";
@@ -485,41 +488,17 @@ const Resell = () => {
                 setIsModalOpen(true);
               }
             }}>
-              + SELL
+              <svg className={`pm-sell-icon ${isSellRotating ? 'rotate-anim' : ''}`} viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm5-3a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+              </svg>
+              <span>SELL</span>
             </button>
           </div>
           
         </div>
       </nav>
       
-      {/* Category subheader capsule links */}
-      <div className="pm-subheader-menu">
-        <div className="pm-subheader-container">
-          <div className="pm-all-categories-btn">
-            <span>All Categories</span>
-            <span style={{fontSize: '10px'}}>▼</span>
-          </div>
-          <ul className="pm-quick-links">
-            <li 
-              className={`pm-quick-link-item ${activeCategory === 'All' ? 'active' : ''}`} 
-              onClick={() => {setActiveCategory('All'); setViewingMyProducts(false);}}
-            >
-              <span>🌐</span>
-              <span>All Recommendations</span>
-            </li>
-            {CATEGORIES.map(cat => (
-              <li 
-                key={cat.name} 
-                className={`pm-quick-link-item ${activeCategory === cat.name ? 'active' : ''}`}
-                onClick={() => {setActiveCategory(cat.name); setViewingMyProducts(false);}}
-              >
-                <span>{cat.icon}</span>
-                <span>{cat.name}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+
 
       {/* Hero Banner Section */}
       <div className="hero-container">

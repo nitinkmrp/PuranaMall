@@ -407,36 +407,73 @@ body {
   border-bottom-color: var(--pm-dark-teal);
 }
 
-/* Beautiful + SELL button with gradient border - Compact Pill Design */
+/* Beautiful eye-catching sunset-neon slitted Sell button */
 .pm-sell-btn {
-  background: var(--pm-pure-white);
-  border: 4px solid transparent;
-  border-radius: 24px;
+  background: rgba(11, 15, 25, 0.95);
+  border: 3px solid transparent;
+  border-radius: 20px 4px 20px 4px;
+  transform: skewX(-6deg);
   cursor: pointer;
-  height: 40px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 20px;
+  gap: 8px;
+  padding: 0 22px;
   position: relative;
-  font-weight: 700;
+  font-weight: 900;
   font-size: 14px;
   font-family: var(--font-pm);
-  color: var(--pm-text-main);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  background-image: linear-gradient(white, white), linear-gradient(135deg, #00c6ff 0%, #0072ff 50%, #00f2fe 100%);
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 15px rgba(121, 40, 202, 0.4);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background-image: linear-gradient(#0b0f19, #0b0f19), linear-gradient(135deg, #ff007f 0%, #7928ca 50%, #00f2fe 100%);
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
 
+/* Ensure the text and icon don't look skewed */
+.pm-sell-btn > * {
+  transform: skewX(6deg);
+}
+
 .pm-sell-btn:hover {
-  box-shadow: 0 8px 20px rgba(0, 114, 255, 0.25);
-  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 25px rgba(255, 0, 127, 0.5), 0 0 10px rgba(0, 242, 254, 0.3);
+  transform: translateY(-3px) scale(1.05) skewX(-6deg);
+  background-image: linear-gradient(#0f172a, #0f172a), linear-gradient(135deg, #00f2fe 0%, #ff007f 50%, #7928ca 100%);
 }
 
 .pm-sell-btn:active {
-  transform: translateY(0) scale(1.0);
+  transform: translateY(0) scale(0.95) skewX(-6deg);
+}
+
+/* Sell Camera Icon styling */
+.pm-sell-icon {
+  color: #ff007f;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pm-sell-btn:hover .pm-sell-icon {
+  color: #00f2fe;
+  transform: scale(1.2) rotate(5deg) skewX(6deg);
+}
+
+/* Dynamic Click Rotation */
+.pm-sell-icon.rotate-anim {
+  animation: pmSellRotate 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pmSellRotate {
+  0% {
+    transform: rotate(0deg) scale(1) skewX(6deg);
+  }
+  50% {
+    transform: rotate(180deg) scale(0.6) skewX(6deg);
+  }
+  100% {
+    transform: rotate(360deg) scale(1) skewX(6deg);
+  }
 }
 
 /* Sub-header Categories Bar */
