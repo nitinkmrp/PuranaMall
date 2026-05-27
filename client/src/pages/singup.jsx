@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import "./Auth.css";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const [isFetchingGeo, setIsFetchingGeo] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -18,6 +19,54 @@ export default function Signup() {
     },
     password: ""
   });
+
+  const fetchGeoLocation = () => {
+    if (navigator.geolocation) {
+      setIsFetchingGeo(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            // Using openstreetmap Nominatim reverse geocoding API
+            const response = await axios.get(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+            );
+            
+            if (response.data && response.data.address) {
+              const addr = response.data.address;
+              const fetchedCity = addr.city || addr.town || addr.village || addr.suburb || "";
+              const fetchedState = addr.state || "";
+              const fetchedPincode = addr.postcode || "";
+              
+              setFormData((prev) => ({
+                ...prev,
+                address: {
+                  city: fetchedCity,
+                  state: fetchedState,
+                  pincode: fetchedPincode
+                }
+              }));
+            }
+          } catch (err) {
+            console.error("Error auto-fetching location details:", err);
+          } finally {
+            setIsFetchingGeo(false);
+          }
+        },
+        (err) => {
+          console.error("Geolocation error during signup:", err);
+          setIsFetchingGeo(false);
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+    }
+  };
+
+  useEffect(() => {
+    fetchGeoLocation();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -124,8 +173,31 @@ export default function Signup() {
               </select>
             </div>
 
-            <div className="auth-form-group full-width" style={{marginTop: "0.5rem", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "1.5rem"}}>
-              <label className="auth-label">Address Details</label>
+            <div className="auth-form-group full-width" style={{marginTop: "0.5rem", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px"}}>
+              <label className="auth-label" style={{margin: 0}}>Address Details</label>
+              <button 
+                type="button" 
+                onClick={fetchGeoLocation}
+                disabled={isFetchingGeo}
+                className="auth-fetch-geo-btn"
+                style={{
+                  padding: "6px 14px",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  backgroundColor: isFetchingGeo ? "#1b2c34" : "#00a8b5",
+                  color: isFetchingGeo ? "#7a8a90" : "white",
+                  border: "none",
+                  borderRadius: "20px",
+                  cursor: isFetchingGeo ? "default" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  transition: "all 0.2s ease",
+                  boxShadow: isFetchingGeo ? "none" : "0 2px 6px rgba(0, 168, 181, 0.2)"
+                }}
+              >
+                {isFetchingGeo ? "⏳ Fetching Location..." : "🎯 Auto-fetch Location"}
+              </button>
             </div>
 
             <div className="auth-form-group">
@@ -135,6 +207,7 @@ export default function Signup() {
                 type="text"
                 name="city"
                 placeholder="City"
+                value={formData.address.city || ""}
                 onChange={handleAddress}
               />
             </div>
@@ -146,6 +219,7 @@ export default function Signup() {
                 type="text"
                 name="state"
                 placeholder="State"
+                value={formData.address.state || ""}
                 onChange={handleAddress}
               />
             </div>
@@ -157,6 +231,7 @@ export default function Signup() {
                 type="text"
                 name="pincode"
                 placeholder="Zip / Pincode"
+                value={formData.address.pincode || ""}
                 onChange={handleAddress}
               />
             </div>

@@ -5,6 +5,7 @@ import Login from "./pages/login";
 import Resell from "./pages/Resell";
 import ProductDetail from "./pages/ProductDetail";
 import Chat from "./pages/Chat";
+import Admin from "./pages/Admin";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/chat/:otherUserId/:productId" element={<Chat />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
 
     </BrowserRouter>

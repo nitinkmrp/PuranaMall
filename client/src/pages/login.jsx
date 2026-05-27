@@ -33,11 +33,17 @@ export default function Login() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      alert(res.data.message);
       console.log(res.data);
 
       if (res.data.success) {
-        navigate("/");
+        if (res.data.user && res.data.user.email === 'admin@gmail.com') {
+          sessionStorage.setItem('adminSessionActive', 'true');
+          alert("Welcome back, Administrator! Accessing PM Admin Console.");
+          navigate("/admin");
+        } else {
+          alert(res.data.message);
+          navigate("/");
+        }
       }
 
     } catch (error) {
@@ -55,7 +61,7 @@ export default function Login() {
       <div className="auth-container">
         <div className="auth-header">
           <h1>Welcome Back</h1>
-          <p>Login to access your OLX Next account</p>
+          <p>Login to access your PuranaMall Next account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">

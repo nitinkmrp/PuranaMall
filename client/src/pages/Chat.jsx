@@ -138,10 +138,10 @@ const Chat = () => {
   };
 
   return (
-    <div className="olx-wrapper chat-wrapper">
-      <nav className="olx-navbar">
-        <div className="olx-logo" onClick={() => navigate('/')} style={{cursor:'pointer'}}>PuranaMall</div>
-        <div className="olx-nav-actions">
+    <div className="pm-wrapper chat-wrapper">
+      <nav className="pm-navbar">
+        <div className="pm-logo" onClick={() => navigate('/')} style={{cursor:'pointer'}}>PuranaMall</div>
+        <div className="pm-nav-actions">
           <button onClick={() => navigate('/')}>Back to Home</button>
         </div>
       </nav>

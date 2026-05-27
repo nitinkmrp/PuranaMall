@@ -1,0 +1,596 @@
+/* PuranaMall Administrative Console Theme Styles */
+:root {
+  --admin-bg: #0b0f19;
+  --admin-surface: #151d30;
+  --admin-surface-light: #1e2942;
+  --admin-accent: #00b5a6;
+  --admin-accent-glow: rgba(0, 181, 166, 0.2);
+  --admin-text-main: #f3f4f6;
+  --admin-text-sub: #9ca3af;
+  --admin-border: #273554;
+  --admin-danger: #ef4444;
+  --admin-success: #10b981;
+}
+
+/* Authentication Screen */
+.admin-login-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1a233d 0%, var(--admin-bg) 100%);
+  color: var(--admin-text-main);
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 20px;
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 440px;
+  background-color: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 2px var(--admin-border);
+  animation: adminFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.admin-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--admin-accent);
+  background-color: var(--admin-accent-glow);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.admin-login-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--admin-text-main);
+}
+
+.admin-login-header p {
+  color: var(--admin-text-sub);
+  font-size: 13px;
+  margin: 0;
+}
+
+.admin-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-login-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--admin-danger);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.admin-login-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-login-group label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--admin-text-sub);
+}
+
+.admin-login-group input {
+  background-color: var(--admin-surface-light);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--admin-text-main);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.admin-login-group input:focus {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 10px var(--admin-accent-glow);
+}
+
+.admin-login-btn {
+  background: linear-gradient(135deg, var(--admin-accent) 0%, #00877c 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.admin-login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 181, 166, 0.3);
+}
+
+.admin-login-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--admin-text-sub);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.admin-login-footer:hover {
+  color: var(--admin-accent);
+}
+
+/* Dashboard Console Window */
+.admin-dashboard-container {
+  min-height: 100vh;
+  background-color: var(--admin-bg);
+  color: var(--admin-text-main);
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 40px;
+  background-color: rgba(21, 29, 48, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--admin-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.admin-header-logo {
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-badge {
+  font-size: 11px;
+  font-weight: 800;
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--admin-success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 6px 12px;
+  border-radius: 12px;
+  letter-spacing: 1px;
+}
+
+.admin-logout-btn {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ff6b6b;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-logout-btn:hover {
+  background-color: var(--admin-danger);
+  color: white;
+  border-color: var(--admin-danger);
+}
+
+/* Dashboard Body Main */
+.admin-dashboard-main {
+  flex: 1;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* metrics row */
+.admin-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.admin-metric-card {
+  background-color: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+  transition: transform 0.25s, border-color 0.25s;
+}
+
+.admin-metric-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--admin-accent);
+}
+
+.metric-info h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--admin-text-sub);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 8px 0;
+}
+
+.metric-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--admin-text-main);
+}
+
+.metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background-color: var(--admin-surface-light);
+}
+
+/* Tabs */
+.admin-tab-bar {
+  display: flex;
+  gap: 12px;
+  border-bottom: 2px solid var(--admin-border);
+  padding-bottom: 12px;
+}
+
+.admin-tab-btn {
+  background: none;
+  border: none;
+  color: var(--admin-text-sub);
+  font-size: 15px;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-tab-btn.active {
+  background-color: var(--admin-surface-light);
+  color: var(--admin-accent);
+  box-shadow: 0 0 0 1px var(--admin-border);
+}
+
+.admin-tab-btn:hover:not(.active) {
+  color: var(--admin-text-main);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Workspace Card */
+.admin-content-card {
+  background-color: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  min-height: 400px;
+}
+
+/* Loading */
+.admin-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  color: var(--admin-text-sub);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--admin-border);
+  border-top-color: var(--admin-accent);
+  border-radius: 50%;
+  animation: adminSpin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+/* Table Directory Styles */
+.admin-table-container {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admin-table th {
+  padding: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--admin-text-sub);
+  border-bottom: 2px solid var(--admin-border);
+  letter-spacing: 0.5px;
+}
+
+.admin-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--admin-border);
+  font-size: 14px;
+  color: var(--admin-text-main);
+  vertical-align: middle;
+}
+
+.user-id-cell {
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--admin-accent);
+}
+
+.gender-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: var(--admin-text-main);
+}
+
+.admin-action-btn {
+  background-color: var(--admin-surface-light);
+  color: var(--admin-text-main);
+  border: 1px solid var(--admin-border);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-action-btn:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+  box-shadow: 0 0 10px var(--admin-accent-glow);
+}
+
+.admin-action-btn.active {
+  background-color: var(--admin-accent);
+  color: white;
+  border-color: var(--admin-accent);
+}
+
+/* Expanded user product drawer styling */
+.expanded-row td {
+  padding: 0 !important;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.expanded-products-box {
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 24px 30px;
+  border-bottom: 1px solid var(--admin-border);
+  animation: adminSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.expanded-products-box h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--admin-accent);
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.no-ads-msg {
+  color: var(--admin-text-sub);
+  font-size: 13px;
+  margin: 0;
+}
+
+.admin-sub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.admin-prod-strip {
+  background-color: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-prod-strip img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background-color: var(--admin-surface-light);
+}
+
+.admin-prod-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-prod-info h5 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--admin-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prod-cat {
+  font-size: 11px;
+  color: var(--admin-text-sub);
+}
+
+.prod-price {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-accent);
+}
+
+/* Feedback List Screen */
+.admin-feedback-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.feedback-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.admin-feedback-card {
+  background-color: var(--admin-surface-light);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: adminFadeIn 0.3s ease;
+}
+
+.feedback-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.feedback-card-header h4 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+}
+
+.feedback-card-header .email {
+  font-size: 12px;
+  color: var(--admin-text-sub);
+}
+
+.feedback-meta {
+  display: flex;
+  gap: 8px;
+}
+
+.rating-pill {
+  font-size: 11px;
+  font-weight: 700;
+  background-color: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  padding: 4px 10px;
+  border-radius: 10px;
+}
+
+.category-tag {
+  font-size: 11px;
+  font-weight: 700;
+  background-color: rgba(0, 181, 166, 0.1);
+  color: var(--admin-accent);
+  border: 1px solid var(--admin-accent-glow);
+  padding: 4px 10px;
+  border-radius: 10px;
+}
+
+.feedback-card-body p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--admin-text-main);
+  font-style: italic;
+}
+
+.feedback-card-footer {
+  font-size: 11px;
+  color: var(--admin-text-sub);
+  text-align: right;
+  border-top: 1px dashed var(--admin-border);
+  padding-top: 10px;
+}
+
+.no-feedback-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  color: var(--admin-text-sub);
+  gap: 10px;
+}
+
+.no-feedback-box .smile {
+  font-size: 32px;
+}
+
+/* Animations */
+@keyframes adminFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes adminSlideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes adminSpin {
+  to { transform: rotate(360deg); }
+}

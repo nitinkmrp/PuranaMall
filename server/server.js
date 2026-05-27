@@ -290,7 +290,7 @@ app.put("/api/products/:id", authenticateToken, upload.single("image"), async (r
 app.get("/api/products", async (req, res) => {
   try {
     const products = await pool.query(`
-      SELECT p.*, u.address as user_address 
+      SELECT p.*, u.name as user_name, u.address as user_address, u.mobile_no 
       FROM products p 
       LEFT JOIN users u ON p.user_id = u.id 
       ORDER BY p.created_at DESC
@@ -426,6 +426,56 @@ app.get("/api/messages/conversations", authenticateToken, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ================= FEEDBACK =================
+app.post("/api/feedback", async (req, res) => {
+  try {
+    const { name, email, rating, category, message } = req.body;
+    
+    if (!name || !email || !rating || !message) {
+      return res.status(400).json({ success: false, message: "Missing required feedback fields" });
+    }
+
+    const newFeedback = await pool.query(
+      `INSERT INTO feedback (name, email, rating, category, message)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [name, email, parseInt(rating), category || 'General', message]
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Feedback submitted successfully! Thank you for helping us improve.",
+      feedback: newFeedback.rows[0]
+    });
+  } catch (error) {
+    console.error("Error submitting feedback:", error);
+    res.status(500).json({ success: false, message: "Server error while processing feedback", error: error.message });
+  }
+});
+
+// ================= ADMIN CONSOLIDATED DATA =================
+app.get("/api/admin/data", async (req, res) => {
+  try {
+    const users = await pool.query("SELECT id, name, email, mobile_no, gender, address, created_at FROM users ORDER BY created_at DESC");
+    const products = await pool.query(`
+      SELECT p.*, u.name as user_name, u.email as user_email 
+      FROM products p 
+      LEFT JOIN users u ON p.user_id = u.id 
+      ORDER BY p.created_at DESC
+    `);
+    const feedback = await pool.query("SELECT * FROM feedback ORDER BY created_at DESC");
+
+    res.json({
+      success: true,
+      users: users.rows,
+      products: products.rows,
+      feedback: feedback.rows
+    });
+  } catch (error) {
+    console.error("Error fetching admin consolidated data:", error);
+    res.status(500).json({ success: false, message: "Server error fetching admin data", error: error.message });
   }
 });
 
