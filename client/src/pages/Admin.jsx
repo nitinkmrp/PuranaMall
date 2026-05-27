@@ -14,6 +14,9 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [feedback, setFeedback] = useState([]);
+  const [uptime, setUptime] = useState(0);
+  const [activeUsers, setActiveUsers] = useState(0);
+  const [apiLimit, setApiLimit] = useState('Unlimited');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'feedback'
   const [expandedUserId, setExpandedUserId] = useState(null);
@@ -26,6 +29,29 @@ export default function Admin() {
       fetchAdminData();
     }
   }, []);
+
+  // Ticking effect to increment server uptime live on UI
+  useEffect(() => {
+    let interval = null;
+    if (isAuthenticated && uptime > 0) {
+      interval = setInterval(() => {
+        setUptime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isAuthenticated, uptime]);
+
+  const formatUptime = (totalSeconds) => {
+    if (!totalSeconds) return '00:00:00';
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return [
+      hrs.toString().padStart(2, '0'),
+      mins.toString().padStart(2, '0'),
+      secs.toString().padStart(2, '0')
+    ].join(':');
+  };
 
   const handleAdminLogin = (e) => {
     e.preventDefault();
@@ -46,6 +72,8 @@ export default function Admin() {
     setUsers([]);
     setProducts([]);
     setFeedback([]);
+    setUptime(0);
+    setActiveUsers(0);
   };
 
   const fetchAdminData = async () => {
@@ -58,6 +86,9 @@ export default function Admin() {
         setUsers(response.data.users);
         setProducts(response.data.products);
         setFeedback(response.data.feedback);
+        setUptime(response.data.uptime || 0);
+        setActiveUsers(response.data.activeUsers || 0);
+        setApiLimit(response.data.apiLimit || 'Unlimited');
       }
     } catch (error) {
       console.error('Error fetching admin data:', error);
@@ -168,6 +199,30 @@ export default function Admin() {
               <div className="metric-value">{feedback.length}</div>
             </div>
             <div className="metric-icon feedback-icon">💬</div>
+          </div>
+
+          <div className="admin-metric-card highlight-card">
+            <div className="metric-info">
+              <h3>Active Connections</h3>
+              <div className="metric-value">{activeUsers} Online</div>
+            </div>
+            <div className="metric-icon active-icon">⚡</div>
+          </div>
+
+          <div className="admin-metric-card highlight-card">
+            <div className="metric-info">
+              <h3>API Request Limit</h3>
+              <div className="metric-value" style={{ color: '#00b5a6' }}>{apiLimit}</div>
+            </div>
+            <div className="metric-icon limit-icon">🛡️</div>
+          </div>
+
+          <div className="admin-metric-card highlight-card">
+            <div className="metric-info">
+              <h3>Server Uptime</h3>
+              <div className="metric-value" style={{ fontFamily: 'monospace', letterSpacing: '1px' }}>{formatUptime(uptime)}</div>
+            </div>
+            <div className="metric-icon uptime-icon">⏳</div>
           </div>
         </div>
 

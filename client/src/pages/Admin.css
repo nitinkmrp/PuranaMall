@@ -594,3 +594,29 @@
 @keyframes adminSpin {
   to { transform: rotate(360deg); }
 }
+
+/* Operational Dashboard metrics styles */
+.admin-metric-card.highlight-card {
+  border-color: rgba(56, 189, 248, 0.25);
+  background: linear-gradient(135deg, var(--admin-surface) 0%, rgba(15, 23, 42, 0.4) 100%);
+}
+
+.admin-metric-card.highlight-card:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 10px 25px rgba(56, 189, 248, 0.15);
+}
+
+.active-icon {
+  background-color: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+}
+
+.limit-icon {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--admin-success);
+}
+
+.uptime-icon {
+  background-color: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+}

@@ -471,7 +471,10 @@ app.get("/api/admin/data", async (req, res) => {
       success: true,
       users: users.rows,
       products: products.rows,
-      feedback: feedback.rows
+      feedback: feedback.rows,
+      uptime: Math.floor(process.uptime()),
+      activeUsers: io.engine.clientsCount || 0,
+      apiLimit: "Unlimited"
     });
   } catch (error) {
     console.error("Error fetching admin consolidated data:", error);
