@@ -287,6 +287,35 @@ app.put("/api/products/:id", authenticateToken, upload.single("image"), async (r
   }
 });
 
+// Delete a product
+app.delete("/api/products/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify ownership
+    const productCheck = await pool.query("SELECT user_id FROM products WHERE id = $1", [id]);
+    if (productCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+    if (productCheck.rows[0].user_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: "Unauthorized to delete this product" });
+    }
+
+    // Delete associated messages and then the product
+    await pool.query("DELETE FROM messages WHERE product_id = $1", [id]);
+    await pool.query("DELETE FROM products WHERE id = $1", [id]);
+
+    res.json({
+      success: true,
+      message: "Product deleted successfully"
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+});
+
+
 app.get("/api/products", async (req, res) => {
   try {
     const products = await pool.query(`

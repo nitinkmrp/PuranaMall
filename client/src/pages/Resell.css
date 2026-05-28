@@ -832,8 +832,16 @@ body {
   max-width: 140px;
 }
 
-/* My Products Edit Button inside card */
+/* My Products Edit/Delete Actions inside card */
+.pm-my-product-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  width: 100%;
+}
+
 .pm-my-product-edit-btn {
+  flex: 1;
   background: var(--pm-dark-teal);
   color: var(--pm-pure-white);
   border: none;
@@ -841,7 +849,6 @@ body {
   font-weight: 700;
   padding: 8px;
   border-radius: 4px;
-  margin-top: 8px;
   font-size: 12px;
   cursor: pointer;
   text-align: center;
@@ -851,6 +858,26 @@ body {
 .pm-my-product-edit-btn:hover {
   background-color: #001e21;
 }
+
+.pm-my-product-delete-btn {
+  flex: 1;
+  background: var(--pm-error);
+  color: var(--pm-pure-white);
+  border: none;
+  font-family: var(--font-pm);
+  font-weight: 700;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.pm-my-product-delete-btn:hover {
+  background-color: #c0392b;
+}
+
 
 /* Authentic Inline Promo Card */
 .pm-promo-inline-card {

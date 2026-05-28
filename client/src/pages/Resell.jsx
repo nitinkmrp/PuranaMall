@@ -4,17 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import './Resell.css';
 
 const CATEGORIES = [
-  { name: "Cars", icon: "🚗", bg: "#ffebec" },
-  { name: "Motorcycles", icon: "🏍️", bg: "#fff3e5" },
-  { name: "Properties", icon: "🏠", bg: "#e6f9ed" },
-  { name: "Gadgets", icon: "📱", bg: "#e6f2ff" },
-  { name: "Tickets", icon: "🎫", bg: "#ffe6f2" },
-  { name: "Electronics", icon: "⚡", bg: "#f3e6ff" },
-  { name: "Health", icon: "⚕️", bg: "#e6fff9" },
-  { name: "Fashion", icon: "👕", bg: "#fffbe6" },
-  { name: "Food", icon: "🍔", bg: "#ffe6e6" },
-  { name: "Baby Gear", icon: "🍼", bg: "#e6ffff" }
+  { name: "Calculator", icon: "🧮", bg: "#ffebec" },
+  { name: "Drafter", icon: "📐", bg: "#fff3e5" },
+  { name: "Study Table", icon: "📚", bg: "#e6f9ed" }
 ];
+
 
 const POPULAR_CITIES = [];
 
@@ -42,7 +36,7 @@ const Resell = () => {
   
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Electronics',
+    category: 'Calculator',
     price: '',
     imageFile: null,
     imagePreview: null,
@@ -142,7 +136,7 @@ const Resell = () => {
     setEditingProductId(product.id);
     setFormData({
       name: product.name,
-      category: product.category || 'Electronics',
+      category: product.category || 'Calculator',
       description: product.description || '',
       price: product.price ? product.price.replace('₹', '').replace('$', '').replace('Rp. ', '') : '',
       imageFile: null,
@@ -190,13 +184,32 @@ const Resell = () => {
       
       setIsModalOpen(false);
       setEditingProductId(null);
-      setFormData({ name: '', category: 'Electronics', description: '', price: '', imageFile: null, imagePreview: null });
+      setFormData({ name: '', category: 'Calculator', description: '', price: '', imageFile: null, imagePreview: null });
     } catch (error) {
       console.error('Error uploading product:', error);
       const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
       alert('Failed to list product: ' + errorMsg);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) {
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/products/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setProducts(products.filter(p => p.id !== productId));
+        alert("Product deleted successfully!");
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Failed to delete product: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -537,7 +550,7 @@ const Resell = () => {
             <div 
               key={cat.name} 
               className="cat-capsule-item"
-              style={{ background: cat.bg, borderLeft: `4px solid ${cat.name === 'Cars' ? '#ff3838' : cat.name === 'Motorcycles' ? '#ff9f43' : cat.name === 'Properties' ? '#2ecc71' : cat.name === 'Gadgets' ? '#2980b9' : cat.name === 'Tickets' ? '#e84393' : cat.name === 'Electronics' ? '#9b59b6' : cat.name === 'Health' ? '#1abc9c' : cat.name === 'Fashion' ? '#f1c40f' : cat.name === 'Food' ? '#e67e22' : '#00a8b5'}` }}
+              style={{ background: cat.bg, borderLeft: `4px solid ${cat.name === 'Calculator' ? '#ff3838' : cat.name === 'Drafter' ? '#ff9f43' : '#2ecc71'}` }}
               onClick={() => {setActiveCategory(cat.name); setViewingMyProducts(false);}}
             >
               <span className="cat-capsule-icon">{cat.icon}</span>
@@ -655,15 +668,20 @@ const Resell = () => {
                     </div>
                     
                     {viewingMyProducts && (
-                      <button 
-                        className="pm-my-product-edit-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditModal(product);
-                        }}
-                      >
-                        ✎ Edit Product
-                      </button>
+                      <div className="pm-my-product-actions" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="pm-my-product-edit-btn"
+                          onClick={() => openEditModal(product)}
+                        >
+                          ✎ Edit Product
+                        </button>
+                        <button 
+                          className="pm-my-product-delete-btn"
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
+                          🗑 Delete Product
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -862,7 +880,7 @@ const Resell = () => {
           <button type="button" className="pm-modal-close" onClick={() => {
             setIsModalOpen(false);
             setEditingProductId(null);
-            setFormData({ name: '', category: 'Electronics', description: '', price: '', imageFile: null, imagePreview: null });
+            setFormData({ name: '', category: 'Calculator', description: '', price: '', imageFile: null, imagePreview: null });
           }}>✕</button>
           <h2>{editingProductId ? 'Edit Your Listing' : 'Post Your Ad'}</h2>
           
