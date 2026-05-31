@@ -1476,14 +1476,39 @@ textarea.pm-input:focus {
 }
 
 @media (max-width: 768px) {
+  .pm-navbar {
+    padding: 12px 16px;
+  }
+  .pm-header-container {
+    flex-wrap: wrap;
+    gap: 12px 8px;
+    justify-content: space-between;
+  }
+  .pm-brand-logo {
+    order: 1;
+    margin-right: 0;
+  }
+  .pm-nav-user-actions {
+    order: 2;
+    margin-left: auto;
+    gap: 12px;
+  }
   .pm-location-search-box {
-    display: none; /* Hide location box on mobile layout */
+    order: 3;
+    display: flex !important; /* Keep college selector visible on mobile! */
+    width: 100% !important;
+    min-width: unset !important;
+  }
+  .pm-global-search-bar {
+    order: 4;
+    width: 100% !important;
   }
   .pm-lang-switcher {
     display: none;
   }
   .pm-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
   .pm-feedback-container {
     flex-direction: column;
@@ -1510,6 +1535,35 @@ textarea.pm-input:focus {
   }
   .pm-footer-top-columns {
     grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .pm-grid {
+    grid-template-columns: 1fr; /* Stack product listings vertically on small phones */
+    gap: 16px;
+  }
+  .pm-banner-promo {
+    flex-direction: column;
+    height: auto;
+    padding: 24px 16px;
+    text-align: center;
+    gap: 16px;
+  }
+  .pm-banner-actions {
+    width: 100%;
+  }
+  .pm-banner-actions button {
+    width: 100%;
+  }
+  .pm-modal {
+    padding: 24px 16px;
+    margin: 10px;
+    max-height: 95vh;
+  }
+  .pm-quick-link-item {
+    padding: 6px 12px;
+    font-size: 12px;
   }
 }
 
