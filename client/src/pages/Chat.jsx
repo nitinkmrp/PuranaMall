@@ -8,6 +8,18 @@ import './Chat.css';
 const Chat = () => {
   const { otherUserId, productId } = useParams();
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(localStorage.getItem('pm-theme') || 'dark');
+
+  useEffect(() => {
+    document.body.className = `deccan-theme ${theme}-mode`;
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('pm-theme', newTheme);
+  };
+
   const [user, setUser] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -138,11 +150,33 @@ const Chat = () => {
   };
 
   return (
-    <div className="pm-wrapper chat-wrapper">
-      <nav className="pm-navbar">
-        <div className="pm-logo" onClick={() => navigate('/')} style={{cursor:'pointer'}}>PuranaMall</div>
-        <div className="pm-nav-actions">
-          <button onClick={() => navigate('/')}>Back to Home</button>
+    <div className={`pm-wrapper chat-wrapper deccan-theme ${theme}-mode`}>
+      {/* Background ambient lighting and grid layer for Deccan Experts feel */}
+      <div className="deccan-glow-blob-1"></div>
+      <div className="deccan-glow-blob-2"></div>
+      <div className="deccan-grid-overlay"></div>
+
+      <nav className="pm-navbar deccan-navbar">
+        <div className="pm-brand-logo" onClick={() => navigate('/')} title="PuranaMall Home" style={{ cursor: 'pointer' }}>
+          <svg viewBox="0 0 400 80" width="145" height="34" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="60" fontSize="58" fontWeight="900" fill="var(--deccan-text-main)" letterSpacing="-3">PuranaMall</text>
+            <circle cx="288" cy="20" r="8" fill="var(--deccan-primary)" />
+          </svg>
+        </div>
+        <div className="pm-nav-user-actions">
+          <button className="pm-theme-toggle-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'} style={{ marginRight: '8px' }}>
+            {theme === 'dark' ? (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="5" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
+          <button className="pm-sell-btn" onClick={() => navigate('/')}>Back to Home</button>
         </div>
       </nav>
 

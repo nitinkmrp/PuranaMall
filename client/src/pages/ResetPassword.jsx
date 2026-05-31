@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
 import "./Auth.css";
 
-export default function Login() {
+export default function ResetPassword() {
+  const { token } = useParams();
   const navigate = useNavigate();
   const [theme, setTheme] = useState(localStorage.getItem('pm-theme') || 'dark');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     document.body.className = `deccan-theme ${theme}-mode`;
@@ -17,64 +21,38 @@ export default function Login() {
     localStorage.setItem('pm-theme', newTheme);
   };
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: ""
-  });
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
   const handleSubmit = async (e) => {
-
     e.preventDefault();
+    if (password !== confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
 
+    setLoading(true);
     try {
-
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/login`,
-        formData
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/reset-password/${token}`,
+        { password }
       );
-
-      // save token
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-
-      console.log(res.data);
-
-      if (res.data.success) {
-        if (res.data.user && res.data.user.email === 'admin@gmail.com') {
-          sessionStorage.setItem('adminSessionActive', 'true');
-          alert("Welcome back, Administrator! Accessing PM Admin Console.");
-          navigate("/admin");
-        } else {
-          alert(res.data.message);
-          navigate("/");
-        }
-      }
-
+      alert(res.data.message);
+      navigate("/login");
     } catch (error) {
       if (error.response && error.response.data && error.response.data.message) {
         alert(error.response.data.message);
       } else {
-        alert("Network error or server is unreachable. Please try again.");
-        console.error(error);
+        alert("The recovery token is invalid or has expired. Please try again.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className={`auth-wrapper deccan-theme ${theme}-mode`}>
-      {/* Background ambient lighting and grid layer for Deccan Experts feel */}
       <div className="deccan-glow-blob-1"></div>
       <div className="deccan-glow-blob-2"></div>
       <div className="deccan-grid-overlay"></div>
 
-      {/* Floating brand header */}
       <div style={{ position: 'absolute', top: '24px', left: '24px', right: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
           <svg viewBox="0 0 400 80" width="130" height="30" xmlns="http://www.w3.org/2000/svg">
@@ -112,8 +90,6 @@ export default function Login() {
               gap: '6px',
               transition: 'all 0.2s ease',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 56, 56, 0.2)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 56, 56, 0.1)'; }}
           >
             ✕ Quit
           </button>
@@ -122,50 +98,39 @@ export default function Login() {
 
       <div className="auth-container">
         <div className="auth-header">
-          <h1>Welcome Back</h1>
-          <p>Login to access your PuranaMall Next account</p>
+          <h1>Update Password</h1>
+          <p>Please type your new secure campus password below</p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-form-group">
-            <label className="auth-label">Email Address</label>
+            <label className="auth-label">New Password</label>
             <input
               className="auth-input"
-              type="email"
-              name="email"
-              placeholder="you@example.com"
-              onChange={handleChange}
+              type="password"
+              placeholder="Minimum 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
 
           <div className="auth-form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label className="auth-label">Password</label>
-              <Link to="/forgot-password" style={{ fontSize: '11.5px', color: 'var(--deccan-primary)', textDecoration: 'none', fontWeight: 'bold' }}>
-                Forgot Password?
-              </Link>
-            </div>
+            <label className="auth-label">Confirm New Password</label>
             <input
               className="auth-input"
               type="password"
-              name="password"
-              placeholder="••••••••"
-              onChange={handleChange}
+              placeholder="Repeat your password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
           </div>
 
-          <button type="submit" className="auth-submit-btn">
-            Login Now
+          <button type="submit" className="auth-submit-btn" disabled={loading}>
+            {loading ? "Updating credentials..." : "Reset My Password"}
           </button>
         </form>
-
-        <div className="auth-footer">
-          <p>
-            Don't have an account? <Link to="/signup" className="auth-link">Signup here</Link>
-          </p>
-        </div>
       </div>
     </div>
   );

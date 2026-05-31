@@ -2,18 +2,75 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './Resell.css';
+import { io } from 'socket.io-client';
 
 const CATEGORIES = [
+  { name: "Laptops & Gadgets", icon: "💻", bg: "#eef2ff" },
+  { name: "Textbooks & Notes", icon: "📚", bg: "#fdf2f8" },
   { name: "Calculator", icon: "🧮", bg: "#ffebec" },
   { name: "Drafter", icon: "📐", bg: "#fff3e5" },
-  { name: "Study Table", icon: "📚", bg: "#e6f9ed" }
+  { name: "Hostel Essentials", icon: "🔌", bg: "#eff6ff" },
+  { name: "Study Table & Chair", icon: "🪑", bg: "#e6f9ed" },
+  { name: "Bicycles & Sports", icon: "🚲", bg: "#f0fdf4" },
+  { name: "Other", icon: "➕", bg: "#f1f2f6" }
 ];
 
 
 const POPULAR_CITIES = [];
 
+const DEFAULT_COLLEGES = [
+  "ABES Engineering College, Ghaziabad",
+  "Jaipuria Institute of Management, Ghaziabad",
+  "Ajay Kumar Garg Institute of Management (AKGIM), Ghaziabad",
+  "Ajay Kumar Garg Engineering College (AKGEC), Ghaziabad",
+  "Institute of Technology and Science (I.T.S), Ghaziabad",
+  "Nitra Technical Campus (NTC), Ghaziabad",
+  "ABES Institute of Technology (ABESIT), Ghaziabad",
+  "Dr. Ram Manohar Lohia College of Pharmacy (Dr.RMLCP), Ghaziabad",
+  "H.R. Institute of Hotel Management (HRIHM), Ghaziabad",
+  "IMS Engineering College (IMSEC), Ghaziabad",
+  "HR Institute of Engineering and Technology (HRIET), Ghaziabad",
+  "Raj Kumar Goel Institute of Technology (RKGIT), Ghaziabad",
+  "Inderprastha Engineering College (IPEC), Ghaziabad",
+  "Babu Banarasi Das Institute of Technology (BBDIT), Ghaziabad",
+  "Unique Institute of Management and Technology (UIMT), Ghaziabad",
+  "Modinagar Institute of Technology (MIT), Ghaziabad",
+  "ITS Pharmacy College, Ghaziabad",
+  "Raj Kumar Goel Institute of Technology & Management (RKGITM), Ghaziabad",
+  "JMS Institute of Technology, Ghaziabad",
+  "Vivekanand Institute of Technology and Science (VITS), Ghaziabad",
+  "BBDIT College of Pharmacy, Ghaziabad",
+  "RD Engineering College, Ghaziabad",
+  "HR Institute of Pharmacy (HRIP), Ghaziabad",
+  "DJ College of Pharmacy (DJCOP), Modinagar",
+  "Oxford College of Pharmacy, Ghaziabad",
+  "Institute of Advanced Management & Research (IAMR), Ghaziabad",
+  "Divya Jyoti College of Engineering and Technology (DJCET), Ghaziabad",
+  "D. S. Institute of Technology & Management (DSITM), Ghaziabad",
+  "Krishna Engineering College (KEC), Ghaziabad",
+  "Rishi Chadha Vishvas Girls Institute of Technology (RCVGIT), Ghaziabad",
+  "Lord Krishna College of Engineering (LKCE), Ghaziabad",
+  "Bhagwant Institute of Technology (BIT), Ghaziabad",
+  "Aryan Institute of Technology (AIT), Ghaziabad",
+  "K.S. Jain Institute of Engineering and Technology, Ghaziabad",
+  "HR Institute of Professional Studies (HRIPS), Ghaziabad"
+];
+
 const Resell = () => {
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(localStorage.getItem('pm-theme') || 'dark');
+
+  useEffect(() => {
+    document.body.className = `deccan-theme ${theme}-mode`;
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('pm-theme', newTheme);
+  };
+
+  const [colleges, setColleges] = useState(DEFAULT_COLLEGES);
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -30,8 +87,9 @@ const Resell = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
-  const [editAddressData, setEditAddressData] = useState({ city: '', state: '', pincode: '' });
+  const [editAddressData, setEditAddressData] = useState({ city: '', state: '', pincode: '', college: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [isVerifyingImage, setIsVerifyingImage] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
   
   const [formData, setFormData] = useState({
@@ -40,7 +98,8 @@ const Resell = () => {
     price: '',
     imageFile: null,
     imagePreview: null,
-    show_mobile: false
+    show_mobile: false,
+    customCategory: ''
   });
 
   const [feedbackData, setFeedbackData] = useState({
@@ -55,6 +114,17 @@ const Resell = () => {
 
   useEffect(() => {
     fetchProducts();
+    fetchColleges();
+
+    // Set up Socket.io listener for new colleges
+    const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
+    socket.on('newCollegeAdded', (newCollegeName) => {
+      setColleges(prev => {
+        if (prev.includes(newCollegeName)) return prev;
+        return [...prev, newCollegeName].sort();
+      });
+    });
+
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
@@ -68,11 +138,13 @@ const Resell = () => {
           email: parsedUser.email || ''
         }));
         
-        // Auto-set navbar location to user's registered city
+        // Auto-set navbar location to user's registered college or city
         if (parsedUser.address) {
           try {
-            const addrObj = JSON.parse(parsedUser.address);
-            if (addrObj && addrObj.city) {
+            const addrObj = typeof parsedUser.address === 'object' ? parsedUser.address : JSON.parse(parsedUser.address);
+            if (addrObj && addrObj.college) {
+              setLocation(addrObj.college);
+            } else if (addrObj && addrObj.city) {
               setLocation(addrObj.city);
             }
           } catch (e) {
@@ -85,7 +157,22 @@ const Resell = () => {
         console.error('Error parsing user data', e);
       }
     }
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
+
+  const fetchColleges = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/colleges`);
+      if (response.data.success) {
+        setColleges(response.data.colleges);
+      }
+    } catch (error) {
+      console.error('Error fetching dynamic colleges list:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -113,14 +200,92 @@ const Resell = () => {
     }
   };
 
-  const handleFileChange = (e) => {
+  const loadNsfwLibraries = () => {
+    return new Promise((resolve, reject) => {
+      if (window.nsfwjs && window.tf) {
+        resolve();
+        return;
+      }
+      
+      const tfScript = document.createElement('script');
+      tfScript.src = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js";
+      tfScript.onload = () => {
+        const nsfwScript = document.createElement('script');
+        nsfwScript.src = "https://cdn.jsdelivr.net/npm/nsfwjs@3.0.1/dist/nsfwjs.min.js";
+        nsfwScript.onload = () => {
+          resolve();
+        };
+        nsfwScript.onerror = () => reject(new Error("Failed to load NSFWJS library"));
+        document.head.appendChild(nsfwScript);
+      };
+      tfScript.onerror = () => reject(new Error("Failed to load TensorFlow library"));
+      document.head.appendChild(tfScript);
+    });
+  };
+
+  const handleFileChange = async (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setFormData(prev => ({ 
-        ...prev, 
-        imageFile: file,
-        imagePreview: URL.createObjectURL(file) 
-      }));
+      
+      // Setup temporary local preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setIsVerifyingImage(true);
+      
+      try {
+        // 1. Dynamic load TensorFlow.js and NSFWJS
+        await loadNsfwLibraries();
+        
+        // 2. Load the image into an HTMLImageElement
+        const img = new Image();
+        img.src = previewUrl;
+        
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error("Could not load image object"));
+        });
+        
+        // 3. Load deep model (highly lightweight MobileNet architecture)
+        const model = await window.nsfwjs.load('mobilenet_v2');
+        
+        // 4. Classify selected image
+        const predictions = await model.classify(img);
+        console.log("Image Safety report:", predictions);
+        
+        // Find probabilities of adult contents
+        const pornClass = predictions.find(p => p.className === 'Porn');
+        const hentaiClass = predictions.find(p => p.className === 'Hentai');
+        
+        const pornProb = pornClass ? pornClass.probability : 0;
+        const hentaiProb = hentaiClass ? hentaiClass.probability : 0;
+        
+        // 60% confidence threshold to identify NSFW content
+        if (pornProb > 0.60 || hentaiProb > 0.60) {
+          alert("❌ INAPPROPRIATE IMAGE DETECTED!\nOur automated safety moderation system has flagged this image as explicit. Please select a clean product listing image (e.g. books, calculators, drafters) to post on the campus board.");
+          e.target.value = "";
+          setFormData(prev => ({ 
+            ...prev, 
+            imageFile: null,
+            imagePreview: null 
+          }));
+        } else {
+          // Success: clean content!
+          setFormData(prev => ({ 
+            ...prev, 
+            imageFile: file,
+            imagePreview: previewUrl 
+          }));
+        }
+      } catch (err) {
+        console.error("Local content moderation failed:", err);
+        // Fallback: fail-safe to let upload proceed if model server is unreachable
+        setFormData(prev => ({ 
+          ...prev, 
+          imageFile: file,
+          imagePreview: previewUrl 
+        }));
+      } finally {
+        setIsVerifyingImage(false);
+      }
     }
   };
 
@@ -134,14 +299,16 @@ const Resell = () => {
 
   const openEditModal = (product) => {
     setEditingProductId(product.id);
+    const isStandardCategory = CATEGORIES.some(c => c.name === product.category);
     setFormData({
       name: product.name,
-      category: product.category || 'Calculator',
+      category: isStandardCategory ? (product.category || 'Calculator') : 'Other',
       description: product.description || '',
       price: product.price ? product.price.replace('₹', '').replace('$', '').replace('Rp. ', '') : '',
       imageFile: null,
       imagePreview: product.image_url || null,
-      show_mobile: product.show_mobile || false
+      show_mobile: product.show_mobile || false,
+      customCategory: isStandardCategory ? '' : (product.category || '')
     });
     setIsModalOpen(true);
   };
@@ -152,7 +319,7 @@ const Resell = () => {
 
     const submitData = new FormData();
     submitData.append('name', formData.name);
-    submitData.append('category', formData.category);
+    submitData.append('category', formData.category === 'Other' ? formData.customCategory : formData.category);
     submitData.append('description', formData.description);
     submitData.append('price', formData.price ? `₹${formData.price}` : '₹' + Math.floor(Math.random() * 20000 + 200));
     submitData.append('show_mobile', formData.show_mobile);
@@ -184,7 +351,7 @@ const Resell = () => {
       
       setIsModalOpen(false);
       setEditingProductId(null);
-      setFormData({ name: '', category: 'Calculator', description: '', price: '', imageFile: null, imagePreview: null });
+      setFormData({ name: '', category: 'Calculator', description: '', price: '', imageFile: null, imagePreview: null, customCategory: '', show_mobile: false });
     } catch (error) {
       console.error('Error uploading product:', error);
       const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message;
@@ -221,28 +388,38 @@ const Resell = () => {
   };
 
   const handleEditAddressClick = () => {
-    let currentCity = '', currentState = '', currentPincode = '';
+    let currentCity = '', currentState = '', currentPincode = '', currentCollege = '';
     if (user.address) {
       if (typeof user.address === 'object') {
         currentCity = user.address.city || '';
         currentState = user.address.state || '';
         currentPincode = user.address.pincode || '';
+        currentCollege = user.address.college || '';
       } else {
         try {
           const addr = JSON.parse(user.address);
           currentCity = addr.city || '';
           currentState = addr.state || '';
           currentPincode = addr.pincode || '';
+          currentCollege = addr.college || '';
         } catch (e) {
           currentCity = user.address;
         }
       }
     }
-    setEditAddressData({ city: currentCity, state: currentState, pincode: currentPincode });
+    setEditAddressData({ city: currentCity, state: currentState, pincode: currentPincode, college: currentCollege });
     setIsEditingAddress(true);
   };
 
   const handleSaveAddress = async () => {
+    if (!editAddressData.college || !editAddressData.college.trim()) {
+      alert("Please select a college name from the list. College name is a mandatory field.");
+      return;
+    }
+    if (!colleges.includes(editAddressData.college)) {
+      alert("Please select a valid college name from the list.");
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       const addressString = JSON.stringify(editAddressData);
@@ -336,6 +513,10 @@ const Resell = () => {
     }
   };
 
+  const filteredCollegesForSearch = colleges.filter(c =>
+    c.toLowerCase().includes((location || '').toLowerCase())
+  );
+
   const filteredProducts = products.filter(p => {
     if (viewingMyProducts) {
       return user && p.user_id === user.id;
@@ -347,60 +528,123 @@ const Resell = () => {
     let matchesLocation = true;
     if (location && location !== 'India' && location !== 'Location') {
       let city = '';
+      let college = '';
       if (p.user_address) {
         if (typeof p.user_address === 'object') {
           city = p.user_address.city || '';
+          college = p.user_address.college || '';
         } else {
           try {
-            city = JSON.parse(p.user_address).city || '';
+            const parsedAddr = JSON.parse(p.user_address);
+            city = parsedAddr.city || '';
+            college = parsedAddr.college || '';
           } catch (e) {
             city = p.user_address;
           }
         }
       }
-      matchesLocation = city.toLowerCase().includes(location.toLowerCase()) || location.toLowerCase().includes(city.toLowerCase());
+      matchesLocation = 
+        city.toLowerCase().includes(location.toLowerCase()) || 
+        location.toLowerCase().includes(city.toLowerCase()) ||
+        (college && (college.toLowerCase().includes(location.toLowerCase()) || location.toLowerCase().includes(college.toLowerCase())));
     }
     
     return matchesSearch && matchesCategory && (location === 'India' || !p.user_address || matchesLocation);
   });
 
   return (
-    <div className="pm-wrapper">
+    <div className={`pm-wrapper deccan-theme ${theme}-mode`}>
+      {/* Top Banner announcement for testing domain */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '10px',
+        padding: '10px 16px',
+        background: 'rgba(255, 159, 67, 0.15)',
+        borderBottom: '1px solid rgba(255, 159, 67, 0.25)',
+        color: '#ffb061',
+        fontSize: '13px',
+        fontWeight: '500',
+        zIndex: 1010,
+        position: 'relative',
+        textAlign: 'center',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+      }}>
+        <span style={{
+          background: '#ff9f43',
+          color: '#000',
+          padding: '2px 8px',
+          borderRadius: '4px',
+          fontSize: '11px',
+          fontWeight: '800',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px'
+        }}>TESTING ENVIRONMENT</span>
+        <span>⚠️ Currently verifying campus listings on <strong>destroyer.in</strong> domain. After testing, this site will migrate to <strong>puranamall</strong>.</span>
+      </div>
+      {/* Background ambient lighting and grid layer for Deccan Experts feel */}
+      <div className="deccan-glow-blob-1"></div>
+      <div className="deccan-glow-blob-2"></div>
+      <div className="deccan-grid-overlay"></div>
+
       {/* Navbar (Sticky Header) */}
-      <nav className="pm-navbar">
+      <nav className="pm-navbar deccan-navbar">
         <div className="pm-header-container">
           
           {/* Logo brand wordmark */}
           <div className="pm-brand-logo" onClick={() => {setViewingMyProducts(false); setActiveCategory('All'); setLocation('India'); setSearchQuery('');}} title="PuranaMall Home">
             <svg viewBox="0 0 400 80" width="145" height="34" xmlns="http://www.w3.org/2000/svg">
-              <text x="0" y="60" font-family="'Roboto', 'Helvetica Neue', sans-serif" font-size="58" font-weight="900" fill="#002f34" letter-spacing="-3">PuranaMall</text>
-              <circle cx="288" cy="20" r="8" fill="#00a8b5" />
+              <text x="0" y="60" fontSize="58" fontWeight="900" fill="var(--deccan-text-main)" letterSpacing="-3">PuranaMall</text>
+              <circle cx="288" cy="20" r="8" fill="var(--deccan-primary)" />
             </svg>
           </div>
           
           {/* Location Search selector box */}
           <div className="pm-location-search-box">
-            <span className="loc-icon">🔍</span>
+            <span className="loc-icon">🎓</span>
             <input 
               type="text" 
-              value={isFetchingLocation ? "Fetching location..." : location} 
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Search city, state..." 
-              onFocus={() => setShowLocationDropdown(true)}
-              onBlur={() => setTimeout(() => setShowLocationDropdown(false), 200)}
+              value={location} 
+              onChange={(e) => {
+                if (!user) {
+                  setLocation(e.target.value);
+                }
+              }}
+              placeholder="Select College..." 
+              onFocus={() => {
+                if (!user) {
+                  setShowLocationDropdown(true);
+                }
+              }}
+              onBlur={() => setTimeout(() => setShowLocationDropdown(false), 250)}
+              readOnly={!!user}
+              style={{ 
+                cursor: user ? 'not-allowed' : 'pointer',
+                opacity: user ? 0.85 : 1
+              }}
             />
-            <span className="dropdown-arrow" onClick={() => setShowLocationDropdown(!showLocationDropdown)}>▼</span>
+            {!user && (
+              <span className="dropdown-arrow" onClick={() => setShowLocationDropdown(!showLocationDropdown)}>▼</span>
+            )}
             
-            {showLocationDropdown && (
-              <div className="pm-location-dropdown">
-                <div className="pm-location-dropdown-item" onClick={fetchLiveLocation} style={{ fontWeight: 'bold', color: '#002f34' }}>
-                  🎯 Use current location
+            {!user && showLocationDropdown && (
+              <div className="pm-location-dropdown" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                <div style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--deccan-text-light)', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                  Select Campus College
                 </div>
-                {POPULAR_CITIES.map(city => (
-                  <div key={city} className="pm-location-dropdown-item" onClick={() => selectPopularCity(city)}>
-                    📍 {city}
+                {filteredCollegesForSearch.length === 0 ? (
+                  <div style={{ padding: '12px 16px', color: 'var(--deccan-text-light)', fontSize: '13px' }}>
+                    No matching colleges found
                   </div>
-                ))}
+                ) : (
+                  filteredCollegesForSearch.map(college => (
+                    <div key={college} className="pm-location-dropdown-item" onClick={() => selectPopularCity(college)}>
+                      🎓 {college}
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -409,7 +653,7 @@ const Resell = () => {
           <div className="pm-global-search-bar">
             <input 
               type="text" 
-              placeholder="Find Cars, Mobile Phones and more..." 
+              placeholder="Find Laptops, Drafters, Calculators and more..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -490,6 +734,20 @@ const Resell = () => {
               <a href="/login" className="pm-login-link">Login</a>
             )}
             
+            {/* Theme Toggle Button */}
+            <button className="pm-theme-toggle-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'} style={{ marginRight: '8px' }}>
+              {theme === 'dark' ? (
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="5" />
+                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              )}
+            </button>
+
             {/* The multi-colour gradient Sell button */}
             <button className="pm-sell-btn" onClick={() => {
               setIsSellRotating(true);
@@ -518,7 +776,7 @@ const Resell = () => {
         <div className="pm-banner-promo">
           <div className="pm-banner-content">
             <h2>Buy, Sell and Discover Everything Here</h2>
-            <p>List your cars, gadgets, real estate properties, and fashion apparel in minutes for FREE!</p>
+            <p>List your laptops, drafters, calculators, study tables, and textbooks in minutes for FREE!</p>
           </div>
           <div className="pm-banner-actions">
             <button onClick={() => {
@@ -587,7 +845,7 @@ const Resell = () => {
                 
                 <div 
                   className="pm-card" 
-                  onClick={() => window.open(`/product/${product.id}`, '_blank')}
+                  onClick={() => navigate(`/product/${product.id}`)}
                   style={{ cursor: 'pointer' }}
                 >
                   {/* Floating heart watchlist */}
@@ -613,11 +871,25 @@ const Resell = () => {
                     <h3 className="pm-title" title={product.name}>{product.name}</h3>
                     
                     <div className="pm-card-footer">
-                      <div className="pm-location-date">
+                      <div className="pm-location-date" style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '140px' }} title={(() => {
+                        if (!product.user_address) return 'Delhi';
+                        if (typeof product.user_address === 'object') return product.user_address.college || product.user_address.city || 'Delhi';
+                        try {
+                          const parsed = JSON.parse(product.user_address);
+                          return parsed.college || parsed.city || 'Delhi';
+                        } catch (e) {
+                          return product.user_address;
+                        }
+                      })()}>
                         📍 {(() => {
                           if (!product.user_address) return 'Delhi';
-                          if (typeof product.user_address === 'object') return product.user_address.city || 'Delhi';
-                          try { return JSON.parse(product.user_address).city || 'Delhi'; } catch (e) { return product.user_address; }
+                          if (typeof product.user_address === 'object') return product.user_address.college || product.user_address.city || 'Delhi';
+                          try {
+                            const parsed = JSON.parse(product.user_address);
+                            return parsed.college || parsed.city || 'Delhi';
+                          } catch (e) {
+                            return product.user_address;
+                          }
                         })()}
                       </div>
                       <div>
@@ -880,7 +1152,7 @@ const Resell = () => {
           <button type="button" className="pm-modal-close" onClick={() => {
             setIsModalOpen(false);
             setEditingProductId(null);
-            setFormData({ name: '', category: 'Calculator', description: '', price: '', imageFile: null, imagePreview: null });
+            setFormData({ name: '', category: 'Calculator', description: '', price: '', imageFile: null, imagePreview: null, customCategory: '', show_mobile: false });
           }}>✕</button>
           <h2>{editingProductId ? 'Edit Your Listing' : 'Post Your Ad'}</h2>
           
@@ -889,9 +1161,20 @@ const Resell = () => {
               
               <div className="pm-form-group">
                 <label>Upload Image</label>
-                <div className="pm-dropzone">
-                  <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} required={!editingProductId} />
-                  {formData.imagePreview ? (
+                <div className="pm-dropzone" style={{ position: 'relative', pointerEvents: isVerifyingImage ? 'none' : 'auto' }}>
+                  <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} required={!editingProductId} disabled={isVerifyingImage} />
+                  {isVerifyingImage ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', width: '100%' }}>
+                      <div className="pm-loading-spinner" style={{ border: '3px solid rgba(255,255,255,0.1)', borderTop: '3px solid var(--deccan-primary)', borderRadius: '50%', width: '30px', height: '30px', animation: 'spin 1s linear infinite', marginBottom: '10px' }}></div>
+                      <style>{`
+                        @keyframes spin {
+                          0% { transform: rotate(0deg); }
+                          100% { transform: rotate(360deg); }
+                        }
+                      `}</style>
+                      <p style={{ margin: 0, fontSize: '13px', color: 'var(--deccan-primary)', fontWeight: 'bold' }}>🔍 Scanning Image Safety...</p>
+                    </div>
+                  ) : formData.imagePreview ? (
                     <img src={formData.imagePreview} alt="Preview" style={{maxHeight: '150px', borderRadius: '4px', border: '1px solid var(--pm-border-gray)'}} />
                   ) : (
                     <>
@@ -928,6 +1211,21 @@ const Resell = () => {
                   {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
+
+              {formData.category === 'Other' && (
+                <div className="pm-form-group pm-form-group-custom-cat" style={{ animation: 'fadeIn 0.3s ease' }}>
+                  <label>Enter Custom Category <span style={{ color: 'red' }}>*</span></label>
+                  <input 
+                    type="text" 
+                    name="customCategory" 
+                    className="pm-input" 
+                    placeholder="e.g. Lab Coat, Drafting Sheet Bag, Mattress" 
+                    value={formData.customCategory || ''} 
+                    onChange={(e) => setFormData(prev => ({ ...prev, customCategory: e.target.value }))}
+                    required 
+                  />
+                </div>
+              )}
 
               <div className="pm-form-group">
                 <label>Item Description</label>
@@ -1002,13 +1300,13 @@ const Resell = () => {
                     {(() => {
                       if (!user.address) return 'Not provided';
                       if (typeof user.address === 'object') {
-                        const { city, state, pincode } = user.address;
-                        return [city, state, pincode].filter(Boolean).join(', ') || 'Not provided';
+                        const { city, state, pincode, college } = user.address;
+                        return [college, city, state, pincode].filter(Boolean).join(', ') || 'Not provided';
                       }
                       try {
                         const addr = JSON.parse(user.address);
-                        const { city, state, pincode } = addr;
-                        return [city, state, pincode].filter(Boolean).join(', ') || 'Not provided';
+                        const { city, state, pincode, college } = addr;
+                        return [college, city, state, pincode].filter(Boolean).join(', ') || 'Not provided';
                       } catch (e) {
                         return user.address;
                       }
@@ -1016,6 +1314,27 @@ const Resell = () => {
                   </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                    <select 
+                      value={editAddressData.college || ""} 
+                      onChange={(e) => setEditAddressData({...editAddressData, college: e.target.value})} 
+                      className="pm-input" 
+                      style={{ 
+                        height: '36px', 
+                        fontSize: '14px', 
+                        padding: '0 8px', 
+                        backgroundColor: 'var(--deccan-card-fill)', 
+                        color: 'var(--deccan-text-main)', 
+                        border: '1px solid var(--deccan-border)',
+                        borderRadius: '4px',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="">Select your College</option>
+                      {colleges.map(college => (
+                        <option key={college} value={college}>{college}</option>
+                      ))}
+                    </select>
                     <input type="text" placeholder="City" value={editAddressData.city} onChange={(e) => setEditAddressData({...editAddressData, city: e.target.value})} className="pm-input" style={{ height: '36px', fontSize: '14px' }} />
                     <input type="text" placeholder="State" value={editAddressData.state} onChange={(e) => setEditAddressData({...editAddressData, state: e.target.value})} className="pm-input" style={{ height: '36px', fontSize: '14px' }} />
                     <input type="text" placeholder="Pincode" value={editAddressData.pincode} onChange={(e) => setEditAddressData({...editAddressData, pincode: e.target.value})} className="pm-input" style={{ height: '36px', fontSize: '14px' }} />

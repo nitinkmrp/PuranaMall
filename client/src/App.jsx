@@ -6,6 +6,8 @@ import Resell from "./pages/Resell";
 import ProductDetail from "./pages/ProductDetail";
 import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
         <Route path="/" element={<Resell />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/chat/:otherUserId/:productId" element={<Chat />} />

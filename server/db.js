@@ -53,7 +53,14 @@ pool.query("SELECT NOW()", (err, res) => {
         )
       `);
     }).then(() => {
-      console.log("✅ Users table verified");
+      // Safely add password reset columns in case table already existed
+      return pool.query(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS reset_password_token VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS reset_password_expires TIMESTAMP
+      `);
+    }).then(() => {
+      console.log("✅ Users table verified with password recovery columns");
       // Create messages table
       return pool.query(`
         CREATE TABLE IF NOT EXISTS messages (
@@ -84,7 +91,68 @@ pool.query("SELECT NOW()", (err, res) => {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
+    }).then(() => {
+      // Create colleges table if it doesn't exist
+      return pool.query(`
+        CREATE TABLE IF NOT EXISTS colleges (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) UNIQUE NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
     }).then(async () => {
+      console.log("✅ Colleges table verified");
+      
+      // Auto-seed default colleges if empty
+      try {
+        const checkColleges = await pool.query("SELECT COUNT(*) FROM colleges");
+        if (parseInt(checkColleges.rows[0].count) === 0) {
+          const defaultColleges = [
+            "ABES Engineering College, Ghaziabad",
+            "Jaipuria Institute of Management, Ghaziabad",
+            "Ajay Kumar Garg Institute of Management (AKGIM), Ghaziabad",
+            "Ajay Kumar Garg Engineering College (AKGEC), Ghaziabad",
+            "Institute of Technology and Science (I.T.S), Ghaziabad",
+            "Nitra Technical Campus (NTC), Ghaziabad",
+            "ABES Institute of Technology (ABESIT), Ghaziabad",
+            "Dr. Ram Manohar Lohia College of Pharmacy (Dr.RMLCP), Ghaziabad",
+            "H.R. Institute of Hotel Management (HRIHM), Ghaziabad",
+            "IMS Engineering College (IMSEC), Ghaziabad",
+            "HR Institute of Engineering and Technology (HRIET), Ghaziabad",
+            "Raj Kumar Goel Institute of Technology (RKGIT), Ghaziabad",
+            "Inderprastha Engineering College (IPEC), Ghaziabad",
+            "Babu Banarasi Das Institute of Technology (BBDIT), Ghaziabad",
+            "Unique Institute of Management and Technology (UIMT), Ghaziabad",
+            "Modinagar Institute of Technology (MIT), Ghaziabad",
+            "ITS Pharmacy College, Ghaziabad",
+            "Raj Kumar Goel Institute of Technology & Management (RKGITM), Ghaziabad",
+            "JMS Institute of Technology, Ghaziabad",
+            "Vivekanand Institute of Technology and Science (VITS), Ghaziabad",
+            "BBDIT College of Pharmacy, Ghaziabad",
+            "RD Engineering College, Ghaziabad",
+            "HR Institute of Pharmacy (HRIP), Ghaziabad",
+            "DJ College of Pharmacy (DJCOP), Modinagar",
+            "Oxford College of Pharmacy, Ghaziabad",
+            "Institute of Advanced Management & Research (IAMR), Ghaziabad",
+            "Divya Jyoti College of Engineering and Technology (DJCET), Ghaziabad",
+            "D. S. Institute of Technology & Management (DSITM), Ghaziabad",
+            "Krishna Engineering College (KEC), Ghaziabad",
+            "Rishi Chadha Vishvas Girls Institute of Technology (RCVGIT), Ghaziabad",
+            "Lord Krishna College of Engineering (LKCE), Ghaziabad",
+            "Bhagwant Institute of Technology (BIT), Ghaziabad",
+            "Aryan Institute of Technology (AIT), Ghaziabad",
+            "K.S. Jain Institute of Engineering and Technology, Ghaziabad",
+            "HR Institute of Professional Studies (HRIPS), Ghaziabad"
+          ];
+          for (const col of defaultColleges) {
+            await pool.query("INSERT INTO colleges (name) VALUES ($1) ON CONFLICT DO NOTHING", [col]);
+          }
+          console.log("🏫 Seeding default colleges successfully!");
+        }
+      } catch (err) {
+        console.error("❌ Error seeding default colleges:", err.message);
+      }
+
       console.log("✅ Feedback table verified");
       
       // Auto-seed Admin user if not exists

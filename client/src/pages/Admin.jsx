@@ -21,12 +21,18 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'feedback'
   const [expandedUserId, setExpandedUserId] = useState(null);
 
+  // College Database State
+  const [collegesList, setCollegesList] = useState([]);
+  const [newCollegeName, setNewCollegeName] = useState('');
+  const [isAddingCollege, setIsAddingCollege] = useState(false);
+
   // Authenticate locally using standard admin credentials
   useEffect(() => {
     const adminSession = sessionStorage.getItem('adminSessionActive');
     if (adminSession === 'true') {
       setIsAuthenticated(true);
       fetchAdminData();
+      fetchColleges();
     }
   }, []);
 
@@ -53,6 +59,43 @@ export default function Admin() {
     ].join(':');
   };
 
+  const fetchColleges = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/colleges`
+      );
+      if (response.data.success) {
+        setCollegesList(response.data.colleges);
+      }
+    } catch (error) {
+      console.error('Error fetching colleges:', error);
+    }
+  };
+
+  const handleAddCollege = async (e) => {
+    e.preventDefault();
+    if (!newCollegeName.trim()) {
+      alert("College name cannot be empty.");
+      return;
+    }
+    setIsAddingCollege(true);
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/colleges`,
+        { name: newCollegeName.trim() }
+      );
+      if (response.data.success) {
+        alert(response.data.message);
+        setCollegesList(prev => [...prev, newCollegeName.trim()].sort());
+        setNewCollegeName('');
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to add college.");
+    } finally {
+      setIsAddingCollege(false);
+    }
+  };
+
   const handleAdminLogin = (e) => {
     e.preventDefault();
     // Verification check for admin user credentials
@@ -61,6 +104,7 @@ export default function Admin() {
       setIsAuthenticated(true);
       setErrorMsg('');
       fetchAdminData();
+      fetchColleges();
     } else {
       setErrorMsg('Invalid Admin Email or Password. Please try again.');
     }
@@ -240,6 +284,12 @@ export default function Admin() {
           >
             💬 Feedback Submissions ({feedback.length})
           </button>
+          <button 
+            className={`admin-tab-btn ${activeTab === 'colleges' ? 'active' : ''}`}
+            onClick={() => setActiveTab('colleges')}
+          >
+            🏫 Manage Colleges ({collegesList.length})
+          </button>
         </div>
 
         {/* Content Box */}
@@ -354,6 +404,97 @@ export default function Admin() {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {activeTab === 'colleges' && (
+                <div style={{ padding: '20px' }}>
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderRadius: '12px',
+                    padding: '24px',
+                    marginBottom: '24px'
+                  }}>
+                    <h3 style={{ color: 'var(--deccan-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🏫 Register New College Campus
+                    </h3>
+                    <p style={{ color: 'var(--deccan-text-muted)', fontSize: '13px', marginBottom: '20px' }}>
+                      Adding a new campus immediately registers it into the dynamic database. Other students will instantly see it listed in their location searches and dropdown filters in real-time!
+                    </p>
+                    
+                    <form onSubmit={handleAddCollege} style={{ display: 'flex', gap: '12px', maxWidth: '600px' }}>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. SRM University, Ghaziabad" 
+                        value={newCollegeName}
+                        onChange={(e) => setNewCollegeName(e.target.value)}
+                        style={{
+                          flex: 1,
+                          height: '42px',
+                          padding: '0 16px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '8px',
+                          color: '#fff',
+                          fontSize: '14px',
+                          outline: 'none'
+                        }}
+                        required
+                      />
+                      <button 
+                        type="submit" 
+                        disabled={isAddingCollege}
+                        style={{
+                          height: '42px',
+                          padding: '0 24px',
+                          backgroundColor: 'var(--deccan-primary)',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: '#000',
+                          fontWeight: 'bold',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        {isAddingCollege ? "Adding..." : "+ Add College"}
+                      </button>
+                    </form>
+                  </div>
+
+                  <h4 style={{ color: '#fff', marginBottom: '16px' }}>Registered College Database ({collegesList.length} total)</h4>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                    gap: '12px',
+                    maxHeight: '400px',
+                    overflowY: 'auto',
+                    paddingRight: '8px'
+                  }}>
+                    {collegesList.map((col, idx) => (
+                      <div 
+                        key={idx} 
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          borderRadius: '8px',
+                          padding: '12px 16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          color: '#e2e8f0',
+                          fontSize: '13.5px'
+                        }}
+                      >
+                        <span style={{ color: 'var(--deccan-primary)', fontWeight: 'bold' }}>{(idx + 1).toString().padStart(2, '0')}</span>
+                        <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={col}>{col}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </>
