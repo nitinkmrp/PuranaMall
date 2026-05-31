@@ -116,8 +116,9 @@ const Resell = () => {
     fetchProducts();
     fetchColleges();
 
-    // Set up Socket.io listener for new colleges
+    // Set up Socket.io listener for new colleges & messages globally
     const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
+    
     socket.on('newCollegeAdded', (newCollegeName) => {
       setColleges(prev => {
         if (prev.includes(newCollegeName)) return prev;
@@ -132,6 +133,34 @@ const Resell = () => {
         setUser(parsedUser);
         fetchUnreadCount();
         
+        // Request Web Notifications permission
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+
+        // Join personal message room
+        socket.emit('join', parsedUser.id);
+
+        // Listen for new incoming messages globally
+        socket.on('newMessage', (message) => {
+          fetchUnreadCount(); // Increment navbar unread badge automatically!
+
+          // Play a premium chat alert audio tone
+          try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav');
+            audio.volume = 0.4;
+            audio.play();
+          } catch (err) {}
+
+          // Alert using standard system Notification API if user is not actively using website tab
+          if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('✉️ New Message on PuranaMall', {
+              body: message.message || 'You received a new message.',
+              icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968771.png'
+            });
+          }
+        });
+
         setFeedbackData(prev => ({
           ...prev,
           name: parsedUser.name || '',

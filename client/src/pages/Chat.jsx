@@ -31,12 +31,32 @@ const Chat = () => {
 
   useEffect(() => {
     if (user) {
+      // Request Web Notifications permission
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+
       socketRef.current = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000');
       socketRef.current.emit('join', user.id);
 
       socketRef.current.on('newMessage', (message) => {
         if (message.product_id == productId && (message.sender_id == otherUserId || message.receiver_id == otherUserId)) {
           setMessages(prev => [...prev, message]);
+        }
+        
+        // Play premium incoming chat audio alert
+        try {
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav');
+          audio.volume = 0.4;
+          audio.play();
+        } catch (err) {}
+
+        // Notify if user has the tab hidden or is viewing another window
+        if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification('✉️ New Message on PuranaMall', {
+            body: message.message || 'You received a new message.',
+            icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968771.png'
+          });
         }
       });
 
