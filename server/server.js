@@ -38,6 +38,122 @@ app.get("/", (req, res) => {
 });
 
 
+// ================= MAIL HELPER =================
+async function sendEmail(to, subject, html) {
+  const nodemailer = require("nodemailer");
+  let transporter;
+  let isSandbox = false;
+
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    const host = process.env.EMAIL_HOST || "mail.privateemail.com";
+    const port = parseInt(process.env.EMAIL_PORT, 10) || 465;
+    const secure = process.env.EMAIL_SECURE !== "false" && (process.env.EMAIL_SECURE === "true" || port === 465);
+
+    transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      tls: {
+        rejectUnauthorized: true
+      }
+    });
+  } else {
+    isSandbox = true;
+    const testAccount = await nodemailer.createTestAccount();
+    transporter = nodemailer.createTransport({
+      host: "smtp.ethereal.email",
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass
+      }
+    });
+    console.log(`✉️ Local SMTP sandbox configured. Test link login at: https://ethereal.email`);
+  }
+
+  const fromAddress = process.env.EMAIL_FROM || (process.env.EMAIL_USER ? `"PuranaMall Support" <${process.env.EMAIL_USER}>` : `"PuranaMall Support" <no-reply@puranamall.in>`);
+
+  const info = await transporter.sendMail({
+    from: fromAddress,
+    to,
+    subject,
+    html
+  });
+
+  if (isSandbox) {
+    console.log(`✉️ Ethereal Sandbox Email Sent! View link: ${nodemailer.getTestMessageUrl(info)}`);
+  }
+  return info;
+}
+
+// ================= OTP GENERATION & VERIFICATION =================
+
+app.post("/api/auth/send-otp", async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Email is required." });
+  }
+
+  try {
+    // Check if email already exists
+    const existingUser = await pool.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already exists"
+      });
+    }
+
+    // Generate random 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes validity
+
+    // Save to database
+    await pool.query("DELETE FROM email_otps WHERE email = $1", [email]);
+    await pool.query(
+      "INSERT INTO email_otps (email, otp, expires_at) VALUES ($1, $2, $3)",
+      [email, otp, expiresAt]
+    );
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff; color: #1e293b;">
+        <h2 style="color: #00a8b5; text-align: center; margin-bottom: 24px;">PuranaMall Verification Code</h2>
+        <p>Thank you for signing up on PuranaMall. Please use the following One-Time Password (OTP) to complete your email verification:</p>
+        <div style="text-align: center; margin: 32px 0;">
+          <span style="font-size: 32px; font-weight: bold; color: #00a8b5; letter-spacing: 6px; padding: 12px 28px; background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; display: inline-block;">${otp}</span>
+        </div>
+        <p style="font-size: 14px; color: #64748b; margin-top: 24px;">This OTP is valid for <strong>10 minutes</strong>. If you did not request this, you can ignore this email.</p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+        <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">PuranaMall Next Gen Campus Marketplace</p>
+      </div>
+    `;
+
+    await sendEmail(email, "Verify Your Email - PuranaMall OTP", htmlContent);
+
+    res.json({
+      success: true,
+      message: "A verification OTP has been sent to your email address."
+    });
+
+  } catch (error) {
+    console.error("Error sending signup OTP:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send verification OTP."
+    });
+  }
+});
+
+
 // ================= SIGNUP =================
 
 app.post("/api/auth/signup", async (req, res) => {
@@ -49,8 +165,30 @@ app.post("/api/auth/signup", async (req, res) => {
       mobile_no,
       gender,
       address,
-      password
+      password,
+      otp
     } = req.body;
+
+    if (!otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Email verification OTP is required."
+      });
+    }
+
+    // Verify OTP in db
+    const otpResult = await pool.query(
+      "SELECT * FROM email_otps WHERE email = $1 AND otp = $2 AND expires_at > NOW()",
+      [email, otp]
+    );
+    const otpValid = otpResult.rows.length > 0;
+
+    if (!otpValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification OTP."
+      });
+    }
 
     // check existing user
     const existingUser = await pool.query(
@@ -82,6 +220,9 @@ app.post("/api/auth/signup", async (req, res) => {
         hashedPassword
       ]
     );
+
+    // Clean up OTP
+    await pool.query("DELETE FROM email_otps WHERE email = $1", [email]);
 
     res.status(201).json({
       success: true,
@@ -164,7 +305,6 @@ app.post("/api/auth/login", async (req, res) => {
 app.post("/api/auth/forgot-password", async (req, res) => {
   const { email } = req.body;
   const crypto = require("crypto");
-  const nodemailer = require("nodemailer");
 
   try {
     const userResult = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
@@ -181,39 +321,10 @@ app.post("/api/auth/forgot-password", async (req, res) => {
       [token, expires, user.id]
     );
 
-    // Dynamic Nodemailer Config (Defaults to Ethereal sandbox if no SMTP provided in .env)
-    let transporter;
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      transporter = nodemailer.createTransport({
-        service: "Gmail",
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
-        }
-      });
-    } else {
-      // Fallback: Autogenerated secure sandbox mailer for seamless local testing!
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass
-        }
-      });
-      console.log(`✉️ Local SMTP sandbox configured. Test link login at: https://ethereal.email`);
-    }
-
     const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
     const resetUrl = `${clientUrl}/reset-password/${token}`;
 
-    const mailOptions = {
-      to: user.email,
-      from: `"PuranaMall Support" <no-reply@puranamall.in>`,
-      subject: "Password Reset Request Link - PuranaMall",
-      html: `
+    const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
           <h2 style="color: #10b981; text-align: center;">PuranaMall Recovery Portal</h2>
           <p>Hello <strong>${user.name}</strong>,</p>
@@ -223,13 +334,9 @@ app.post("/api/auth/forgot-password", async (req, res) => {
           </div>
           <p style="font-size: 12px; color: #64748b;">This link is valid for 1 hour. If you did not trigger this request, you can safely ignore this email.</p>
         </div>
-      `
-    };
+      `;
 
-    const info = await transporter.sendMail(mailOptions);
-    if (!process.env.EMAIL_USER) {
-      console.log(`✉️ Ethereal Sandbox Email Sent! View link: ${nodemailer.getTestMessageUrl(info)}`);
-    }
+    await sendEmail(user.email, "Password Reset Request Link - PuranaMall", htmlContent);
 
     res.json({ success: true, message: "A secure reset link has been dispatched to your email address!" });
 

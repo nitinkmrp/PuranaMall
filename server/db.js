@@ -100,8 +100,19 @@ pool.query("SELECT NOW()", (err, res) => {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
+    }).then(() => {
+      // Create email_otps table if it doesn't exist
+      return pool.query(`
+        CREATE TABLE IF NOT EXISTS email_otps (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          otp VARCHAR(6) NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
     }).then(async () => {
-      console.log("✅ Colleges table verified");
+      console.log("✅ Colleges and Email OTPs tables verified");
       
       // Auto-seed default colleges if empty
       try {

@@ -46,6 +46,20 @@ export default function Signup() {
   const [theme, setTheme] = useState(localStorage.getItem('pm-theme') || 'dark');
   const [colleges, setColleges] = useState(DEFAULT_COLLEGES);
 
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Resend OTP countdown timer
+  useEffect(() => {
+    let timer;
+    if (resendTimer > 0) {
+      timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendTimer]);
+
   useEffect(() => {
     document.body.className = `deccan-theme ${theme}-mode`;
   }, [theme]);
@@ -191,8 +205,7 @@ export default function Signup() {
     });
   };
 
-  const handleSubmit = async (e) => {
-
+  const handleSendOtp = async (e) => {
     e.preventDefault();
 
     if (!formData.address.college || !formData.address.college.trim()) {
@@ -205,9 +218,38 @@ export default function Signup() {
       return;
     }
 
+    setOtpLoading(true);
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/send-otp`,
+        { email: formData.email }
+      );
+
+      alert(res.data.message);
+      if (res.data.success) {
+        setShowOtpModal(true);
+        setResendTimer(60);
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || error.message || "Failed to send verification OTP.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyAndSignup = async (e) => {
+    e.preventDefault();
+
+    if (!otp || otp.length !== 6) {
+      alert("Please enter a valid 6-digit OTP code.");
+      return;
+    }
+
+    setOtpLoading(true);
     try {
       const payload = {
         ...formData,
+        otp,
         address: typeof formData.address === 'object' ? JSON.stringify(formData.address) : formData.address
       };
 
@@ -217,15 +259,32 @@ export default function Signup() {
       );
 
       alert(res.data.message);
-
-      console.log(res.data);
-      
       if (res.data.success) {
+        setShowOtpModal(false);
         navigate("/login");
       }
-
     } catch (error) {
-      alert(error.response?.data?.message || error.message || "An error occurred during signup");
+      alert(error.response?.data?.message || error.message || "Verification failed");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendTimer > 0) return;
+
+    setOtpLoading(true);
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/auth/send-otp`,
+        { email: formData.email }
+      );
+      alert("Verification OTP has been resent successfully!");
+      setResendTimer(60);
+    } catch (error) {
+      alert(error.response?.data?.message || error.message || "Failed to resend OTP.");
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -288,7 +347,7 @@ export default function Signup() {
           <p>Join PuranaMall Next and start trading locally</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSendOtp} className="auth-form">
           <div className="auth-form-grid">
             
             <div className="auth-form-group">
@@ -504,8 +563,8 @@ export default function Signup() {
 
           </div>
 
-          <button type="submit" className="auth-submit-btn">
-            Create Account
+          <button type="submit" className="auth-submit-btn" disabled={otpLoading}>
+            {otpLoading ? "Sending OTP..." : "Create Account"}
           </button>
         </form>
 
@@ -515,6 +574,121 @@ export default function Signup() {
           </p>
         </div>
       </div>
+
+      {showOtpModal && (
+        <div className="otp-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999,
+          padding: '20px'
+        }}>
+          <div className="deccan-glass-card" style={{
+            maxWidth: '420px',
+            width: '100%',
+            padding: '40px',
+            borderRadius: '16px',
+            border: '1px solid var(--deccan-border)',
+            backgroundColor: 'var(--deccan-card-fill)',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)',
+            textAlign: 'center',
+            position: 'relative'
+          }}>
+            <h2 style={{ color: 'var(--deccan-primary)', marginBottom: '10px', fontSize: '24px', fontWeight: '800' }}>Verify Your Email</h2>
+            <p style={{ color: 'var(--deccan-text-light)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+              We've dispatched a 6-digit verification code to <strong>{formData.email}</strong>. Please enter the OTP below to activate your account.
+            </p>
+
+            <form onSubmit={handleVerifyAndSignup} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <input
+                type="text"
+                maxLength="6"
+                placeholder="000000"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                required
+                style={{
+                  width: '100%',
+                  height: '56px',
+                  borderRadius: '8px',
+                  border: '1.5px solid var(--deccan-border)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  color: 'var(--deccan-text-main)',
+                  fontSize: '24px',
+                  letterSpacing: '8px',
+                  textAlign: 'center',
+                  fontWeight: 'bold',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+
+              <button
+                type="submit"
+                disabled={otpLoading}
+                className="auth-submit-btn"
+                style={{
+                  height: '48px',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--deccan-primary)',
+                  color: '#000',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '15px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 12px rgba(0, 168, 181, 0.3)'
+                }}
+                onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
+                onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                {otpLoading ? "Verifying..." : "Verify & Complete Signup"}
+              </button>
+            </form>
+
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendTimer > 0 || otpLoading}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: resendTimer > 0 ? 'var(--deccan-text-light)' : 'var(--deccan-primary)',
+                  cursor: resendTimer > 0 ? 'default' : 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  textDecoration: resendTimer > 0 ? 'none' : 'underline'
+                }}
+              >
+                {resendTimer > 0 ? `Resend code in ${resendTimer}s` : "Resend OTP"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowOtpModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#ff4a4a',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 'bold'
+                }}
+              >
+                Edit Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
